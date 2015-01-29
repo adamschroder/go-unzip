@@ -1,59 +1,68 @@
 package unZipper
 
 import (
-  "io"
-  "os"
-  "log"
-  "strings"
-  "archive/zip"
-  "path/filepath"
+	"archive/zip"
+	// "bufio"
+	// "fmt"
+	"io"
+	// "log"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-func UnZip (src, dest string) error {
+func UnZip(src, dest string) error {
 
-  reader, err := zip.OpenReader(src)
-  if err != nil {
-    return err
-  }
+	reader, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
 
-  defer reader.Close()
+	defer reader.Close()
 
-  for _, f := range reader.File {
-    rc, err := f.Open()
-    if err != nil {
-      return err
-    }
+	for _, f := range reader.File {
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
 
-    defer rc.Close()
+		defer rc.Close()
 
-    fpath := filepath.Join(dest, f.Name)
-    if f.FileInfo().IsDir() {
-      os.MkdirAll(fpath, 0755)
-    } else {
-      var fdir string
-      if lastIndex := strings.LastIndex(fpath, string(os.PathSeparator)); lastIndex > -1 {
-        fdir = fpath[:lastIndex]
-      }
+		fpath := filepath.Join(dest, f.Name)
+		// fmt.Println(f.Name)
 
-      err = os.MkdirAll(fdir, 0755)
-      if err != nil {
-        log.Fatal(err)
-        return err
-      }
+		if f.FileInfo().IsDir() {
+			err = os.MkdirAll(fpath, 0755)
+			if err != nil {
+				return err
+			}
+		} else {
+			var fdir string
+			if lastIndex := strings.LastIndex(fpath, string(os.PathSeparator)); lastIndex > -1 {
+				fdir = fpath[:lastIndex]
+			}
 
-      f, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-      if err != nil {
-        return err
-      }
+			if len(f.Name) < 150 {
 
-      defer f.Close()
+				err = os.MkdirAll(fdir, 0755)
+				if err != nil {
+					return err
+				}
 
-      _, err = io.Copy(f, rc)
-      if err != nil {
-        return err
-      }
-    }
-  }
+				f, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				if err != nil {
+					return err
+				}
 
-  return nil
+				defer f.Close()
+
+				_, err = io.Copy(f, rc)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
